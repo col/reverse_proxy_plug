@@ -43,6 +43,11 @@ defmodule ReverseProxyPlug do
 
   @spec call(Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
   def call(conn, opts) do
+    conditional =
+      opts
+      |> Keyword.get(:if)
+      |> get_applied_fn(true)
+
     upstream_parts =
       opts
       |> Keyword.get(:upstream, "")
@@ -53,8 +58,14 @@ defmodule ReverseProxyPlug do
       opts
       |> Keyword.merge(upstream_parts)
 
-    body = read_body(conn)
-    conn |> request(body, opts) |> response(conn, opts)
+    case conditional do
+      true ->
+        body = read_body(conn)
+        conn |> request(body, opts) |> response(conn, opts)
+
+      _ ->
+        conn
+    end
   end
 
   defp get_string(upstream, default \\ "")
@@ -67,14 +78,14 @@ defmodule ReverseProxyPlug do
     default
   end
 
-  defp get_applied_fn(upstream, default \\ "")
+  defp get_applied_fn(func, default \\ "")
 
   defp get_applied_fn({func, param}, _) when is_function(func) do
     func.(param)
   end
 
-  defp get_applied_fn(upstream, _) when is_function(upstream) do
-    upstream.()
+  defp get_applied_fn(func, _) when is_function(func) do
+    func.()
   end
 
   defp get_applied_fn(_, default) do
