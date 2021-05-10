@@ -24,3 +24,4 @@ reverse_proxy_plug-*.tar
 
 # Vim swap files
 *.sw*
+reverse_proxy_plug.iml
